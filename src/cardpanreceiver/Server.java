@@ -5,15 +5,30 @@
  */
 package cardpanreceiver;
 
+import java.awt.Component;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 /**
  *
  * @author Window 7
  */
 public class Server extends javax.swing.JFrame {
+    private String cardInfo  = "";
+    
     /**
      * Creates new form Server
      */
@@ -115,21 +130,138 @@ public class Server extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
-        try {            
-            UDPServer server = new UDPServer(Integer.parseInt(portNo.getText()));
-            server.sendRequest(stationNo.getSelectedItem().toString());
-            server.receiveMessage(showMessage);
-        } catch (IOException ex) {
-            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+        if(portNo.getText().isEmpty())
+        {
+            Component frame = null;
+            JOptionPane.showMessageDialog(frame,
+            "Text field for port should not be empty.",
+            "Error",
+            JOptionPane.PLAIN_MESSAGE);
+        }
+        else{
+            try {            
+                UDPServer server = new UDPServer(Integer.parseInt(portNo.getText()));
+                server.sendRequest(stationNo.getSelectedItem().toString());
+                cardInfo = server.receiveMessage(showMessage);
+            } catch (IOException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }//GEN-LAST:event_startButtonActionPerformed
 
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
-        // TODO add your handling code here:
+        if(cardInfo.isEmpty())
+        {
+            Component frame = null;
+            JOptionPane.showMessageDialog(frame,
+            "Data doesn't exist",
+            "Error",
+            JOptionPane.PLAIN_MESSAGE);
+        }
+        else
+        {
+            try {
+                saveData(cardInfo);
+            } catch (IOException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
     }//GEN-LAST:event_saveButtonActionPerformed
 
-    public void saveData(String cardInfo){
-        
+    public void saveData(String cardInfo) throws IOException{      
+        String[] wholeContent = cardInfo.split(":");
+        String stationAccepted = wholeContent[0];
+        String cardPan = wholeContent[1];
+        String holderName = wholeContent[2];
+        String remarks = "";
+        File file = new File("test.xls");
+
+        if(file.exists() == false)
+        {
+            XSSFWorkbook workbook = new XSSFWorkbook();
+            XSSFSheet sheet = workbook.createSheet("test.xls");
+            
+            if(cardCheckBox.isSelected())
+            {
+                remarks = "Card Pan and Holder's Name is Different!";
+            }
+
+            Object[][] data = {
+                    {"Station No", "Card Pan","Card Holder's Name","Remarks"},
+                    {stationAccepted,cardPan,holderName,remarks},
+            };
+
+            int rowCount = 0;
+
+            for (Object[] aCard : data) {
+                Row row = sheet.createRow(++rowCount);
+
+                int columnCount = 0;
+
+                for (Object field : aCard) {
+                    Cell cell = row.createCell(++columnCount);
+                    if (field instanceof String) {
+                        cell.setCellValue((String) field);
+                    } else if (field instanceof Integer) {
+                        cell.setCellValue((Integer) field);
+                    }
+                }
+
+            }
+
+
+            try (FileOutputStream outputStream = new FileOutputStream("test.xls")) {
+                workbook.write(outputStream);
+                Component frame = null;
+                JOptionPane.showMessageDialog(frame,
+                "Successfully Create excel and store the data",
+                "Success Message",
+                JOptionPane.PLAIN_MESSAGE);
+            }
+        }
+        else{
+            Workbook workbook;
+            try (FileInputStream inputStream = new FileInputStream(new File("test.xls"))) {
+                workbook = WorkbookFactory.create(inputStream);
+                Sheet sheet = workbook.getSheetAt(0);
+                if(cardCheckBox.isSelected())
+                {
+                    remarks = "Card Pan and Holder's Name is Different!";
+                }
+                Object[][] data = {
+                    {stationAccepted,cardPan,holderName, remarks},
+                };
+                int rowCount = sheet.getLastRowNum();
+                for (Object[] aCard : data) {
+                    Row row = sheet.createRow(++rowCount);
+
+                    int columnCount = 0;
+
+                    Cell cell = row.createCell(columnCount);
+                    cell.setCellValue(rowCount);
+
+                    for (Object field : aCard) {
+                        cell = row.createCell(++columnCount);
+                        if (field instanceof String) {
+                            cell.setCellValue((String) field);
+                        } else if (field instanceof Integer) {
+                            cell.setCellValue((Integer) field);
+                        }
+                    }
+
+                }
+            }
+ 
+            try (FileOutputStream outputStream = new FileOutputStream("test.xls")) {
+                workbook.write(outputStream);
+                workbook.close();
+                Component frame = null;
+                JOptionPane.showMessageDialog(frame,
+                "Successfully Store the Data into Excel",
+                "Success Message",
+                JOptionPane.PLAIN_MESSAGE);
+            }
+        }
     }
     /**
      * @param args the command line arguments
