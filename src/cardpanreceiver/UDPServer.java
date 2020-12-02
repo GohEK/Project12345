@@ -5,8 +5,10 @@
  */
 package cardpanreceiver;
 
+import java.awt.Component;
 import java.net.*;
 import java.io.*;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 
 /**
@@ -26,22 +28,28 @@ public class UDPServer {
         data = requestMessage.getBytes();
         InetAddress address = InetAddress.getLocalHost();
         
-        DatagramPacket packet = new DatagramPacket(data,data.length,address,1234);
+        DatagramPacket packet = new DatagramPacket(data,data.length,address,5231);
         
         serverSocket.send(packet);   
     }
     
-    public void receiveMessage(JTextArea messageBox) throws IOException{
-        data = new byte[55555];
-
-        serverSocket.setSoTimeout(5000);
-        
-        DatagramPacket packet = new DatagramPacket(data,data.length);
-        
-        serverSocket.receive(packet);
-
-        String packetContent = new String(packet.getData(),0,packet.getLength());
-
-        messageBox.append(packetContent + "\n");
+    public String receiveMessage(JTextArea messageBox) throws IOException{
+        try (serverSocket) {
+            data = new byte[55555];
+            serverSocket.setSoTimeout(20000);
+            DatagramPacket packet = new DatagramPacket(data,data.length);
+            serverSocket.receive(packet);
+            String packetContent = new String(packet.getData(),0,packet.getLength());
+            messageBox.append(packetContent + "\n");
+            return packetContent;
+        }
+        catch (SocketTimeoutException ex){
+            Component frame = null;
+            JOptionPane.showMessageDialog(frame,
+            "Run Time Error",
+            "Error",
+            JOptionPane.PLAIN_MESSAGE);
+        }
+        return "";
     }
 }

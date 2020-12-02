@@ -34,6 +34,7 @@ public class Server extends javax.swing.JFrame {
      */
     public Server() {
         initComponents();
+        portNo.setText("5230");
     }
 
     /**
@@ -56,6 +57,7 @@ public class Server extends javax.swing.JFrame {
         saveButton = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("Card Pan Receiver");
 
         jLabel1.setText("Port : ");
 
@@ -127,6 +129,7 @@ public class Server extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
@@ -145,6 +148,12 @@ public class Server extends javax.swing.JFrame {
                 cardInfo = server.receiveMessage(showMessage);
             } catch (IOException ex) {
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (NumberFormatException ex){
+                Component frame = null;
+                JOptionPane.showMessageDialog(frame,
+                "Port field can only enter number",
+                "Error",
+                JOptionPane.PLAIN_MESSAGE);
             }
         }
     }//GEN-LAST:event_startButtonActionPerformed
@@ -162,9 +171,10 @@ public class Server extends javax.swing.JFrame {
         {
             try {
                 saveData(cardInfo);
+                cardInfo = "";
             } catch (IOException ex) {
                 Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            } 
         }
     }//GEN-LAST:event_saveButtonActionPerformed
 
@@ -174,16 +184,18 @@ public class Server extends javax.swing.JFrame {
         String cardPan = wholeContent[1];
         String holderName = wholeContent[2];
         String remarks = "";
-        File file = new File("test.xls");
+        
+        String fileName = "CardInfo.xls";
+        File file = new File(fileName);
 
         if(file.exists() == false)
         {
             XSSFWorkbook workbook = new XSSFWorkbook();
-            XSSFSheet sheet = workbook.createSheet("test.xls");
+            XSSFSheet sheet = workbook.createSheet(fileName);
             
             if(cardCheckBox.isSelected())
             {
-                remarks = "Card Pan and Holder's Name is Different!";
+                remarks = "Different value after the comparison.";
             }
 
             Object[][] data = {
@@ -210,7 +222,7 @@ public class Server extends javax.swing.JFrame {
             }
 
 
-            try (FileOutputStream outputStream = new FileOutputStream("test.xls")) {
+            try (FileOutputStream outputStream = new FileOutputStream(fileName)) {
                 workbook.write(outputStream);
                 Component frame = null;
                 JOptionPane.showMessageDialog(frame,
@@ -221,12 +233,12 @@ public class Server extends javax.swing.JFrame {
         }
         else{
             Workbook workbook;
-            try (FileInputStream inputStream = new FileInputStream(new File("test.xls"))) {
+            try (FileInputStream inputStream = new FileInputStream(new File(fileName))) {
                 workbook = WorkbookFactory.create(inputStream);
                 Sheet sheet = workbook.getSheetAt(0);
                 if(cardCheckBox.isSelected())
                 {
-                    remarks = "Card Pan and Holder's Name is Different!";
+                    remarks = "Different value after the comparison.";
                 }
                 Object[][] data = {
                     {stationAccepted,cardPan,holderName, remarks},
@@ -252,7 +264,7 @@ public class Server extends javax.swing.JFrame {
                 }
             }
  
-            try (FileOutputStream outputStream = new FileOutputStream("test.xls")) {
+            try (FileOutputStream outputStream = new FileOutputStream(fileName)) {
                 workbook.write(outputStream);
                 workbook.close();
                 Component frame = null;
